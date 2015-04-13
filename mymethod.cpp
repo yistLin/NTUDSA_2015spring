@@ -44,6 +44,39 @@ bool SmallContainer::operator<(const SmallContainer& a) const{
 		return false;
 }
 
+struct properties_comp{
+	bool operator()(const ContainerB& a, const ContainerB& b){
+		if(a.url < b.url)
+			return true;
+		else if(a.url == b.url){
+			if(a.advertiserid < b.advertiserid)
+				return true;
+			else if(a.advertiserid == b.advertiserid){
+				if(a.keywordid < b.keywordid)
+					return true;
+				else if(a.keywordid == b.keywordid){
+					if(a.titleid < b.titleid)
+						return true;
+					else if(a.titleid == b.titleid){
+						if(a.descriptionid < b.descriptionid)
+							return true;
+						else
+							return false;
+					}
+					else
+						return false;
+				}
+				else
+					return false;
+			}
+			else
+				return false;
+		}
+		else
+			return false;
+	}
+};
+
 void get(std::vector<ContainerA> *v,const int& u,const int& a,const int& q,const int& p,const int& d){
 	int sumOfClick = 0, sumOfImpression = 0;
 	for(vector<ContainerA>::iterator it = v[u].begin(); it!=v[u].end(); ++it){
@@ -79,21 +112,17 @@ void clicked(vector<ContainerA> *v,const int& u){
 void impressed(vector<ContainerA>* v,vector<ContainerB>* v2,const int& u1,const int& u2){
 	set<int> sorted_adid_u1;
 	set<int> sorted_adid_u2;
-	vector<ContainerB> ad_properties;
+
 	for(vector<ContainerA>::iterator itA = v[u1].begin(); itA != v[u1].end(); ++itA){
-		if((*itA).impression > 0){
-			sorted_adid_u1.insert((*itA).adid);
-		}
+		sorted_adid_u1.insert((*itA).adid);
 	}
 	for(vector<ContainerA>::iterator itB = v[u2].begin(); itB != v[u2].end(); ++itB){
-		if((*itB).impression > 0){
-			sorted_adid_u2.insert((*itB).adid);
-		}
+		sorted_adid_u2.insert((*itB).adid);
 	}
 
+	set<ContainerB,properties_comp> ad_properties;
 	set<int>::iterator itA = sorted_adid_u1.begin();
 	set<int>::iterator itB = sorted_adid_u2.begin();
-	bool used = false;
 	printf("********************\n");
 	while(itA != sorted_adid_u1.end() && itB != sorted_adid_u2.end()){
 		if(*itA < *itB)
@@ -105,18 +134,10 @@ void impressed(vector<ContainerA>* v,vector<ContainerB>* v2,const int& u1,const 
 			ad_properties.clear();
 			for(vector<ContainerB>::iterator iter=v2[*itA].begin();iter!=v2[*itA].end();++iter){
 				if((*iter).userid == u1 || (*iter).userid == u2)
-					ad_properties.push_back(*iter);
+					ad_properties.insert(*iter);
 			}
-			for(vector<ContainerB>::iterator iter=ad_properties.begin();iter!=ad_properties.end();++iter){
-				used = false;
-				for(vector<ContainerB>::iterator it=ad_properties.begin();it!=iter;++it){
-					if((*it).url==(*iter).url && (*it).advertiserid==(*iter).advertiserid && (*it).keywordid==(*iter).keywordid && (*it).titleid==(*iter).titleid && (*it).descriptionid==(*iter).descriptionid){
-						used = true;
-						break;
-					}
-				}
-				if(used == false)
-					printf("\t%llu %d %d %d %d\n",(*iter).url,(*iter).advertiserid,(*iter).keywordid,(*iter).titleid,(*iter).descriptionid);
+			for(set<ContainerB,properties_comp>::iterator iter=ad_properties.begin();iter!=ad_properties.end();++iter){
+				printf("\t%llu %d %d %d %d\n",(*iter).url,(*iter).advertiserid,(*iter).keywordid,(*iter).titleid,(*iter).descriptionid);
 			}
 			itA++;
 			itB++;
