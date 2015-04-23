@@ -1,3 +1,2 @@
 # ignore compiled binary file
-*.o
-demo
+*.out
