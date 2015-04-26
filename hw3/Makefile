@@ -18,4 +18,4 @@ run3_4_1:
 	./3_4_1.out < input > output
 
 run3_4_2:
-	./3_4_2.out < input > output
+	./3_4_2.out < input2
