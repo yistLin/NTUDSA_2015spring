@@ -1,3 +1,4 @@
 # ignore compiled binary file
 *.out
 output
+test*
