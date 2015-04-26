@@ -5,17 +5,17 @@ CC = g++
 INSTDIR = /usr/local/bin
 CFLAGS = -O2 -std=c++11 -Wall
 
-3_4_1.out: 3_4_1.cpp
-	$(CC) $(CFLAGS) -o 3_4_1.out 3_4_1.cpp
+3_4_1.out: integer_calculator.cpp
+	$(CC) $(CFLAGS) -o 3_4_1.out integer_calculator.cpp
 
-3_4_2.out: 3_4_2.cpp
-	$(CC) $(CFLAGS) -o 3_4_2.out 3_4_2.cpp
+3_4_2.out: floatpoint_calculator.cpp
+	$(CC) $(CFLAGS) -o 3_4_2.out floatpoint_calculator.cpp
 
 clean:
 	rm 3_4_1.out 3_4_2.out
 
 run3_4_1:
-	./3_4_1.out < input > output
+	./3_4_1.out
 
 run3_4_2:
-	./3_4_2.out < input2
+	./3_4_2.out
