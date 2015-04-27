@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stack>
-#include <queue>
+#include <list>
+#include <map>
 #include <string>
 
 using namespace std;
@@ -11,7 +12,7 @@ struct element
 	int content;
 };
 
-void Infix2Postfix(string& expression, queue<element>& Elem);
+void Infix2Postfix(string& expression, list<element>& Elem, map<int,string>& opMap);
 
 int readInt(string&,int&);
 
@@ -19,7 +20,11 @@ int readOp(string&,int&,bool);
 
 bool hasHigherPrecendence(int&,int&);
 
-void processPostfix(queue<element>&);
+void printOperatorStack(list<int>&,map<int,string>&);
+
+void printPostfixList(list<element>&,map<int,string>&);
+
+void processPostfix(list<element>&);
 
 enum {
 	// ( and ) are the highest level
@@ -51,25 +56,46 @@ enum {
 int main(int argc, char const *argv[])
 {
 	string expression;
-	queue<element> Elem;
+	list<element> Elem;
+	map<int,string> opMap;
+	opMap[0] = "||";
+	opMap[1] = "&&";
+	opMap[2] = "|";
+	opMap[3] = "^";
+	opMap[4] = "&";
+	opMap[5] = "<<";
+	opMap[15] = ">>";
+	opMap[6] = "+";
+	opMap[16] = "-";
+	opMap[7] = "*";
+	opMap[17] = "/";
+	opMap[27] = "%";
+	opMap[8] = "!";
+	opMap[18] = "~";
+	opMap[28] = "p";
+	opMap[38] = "m";
+	opMap[9] = "(";
 
 	while(getline(cin, expression)){
-		Infix2Postfix(expression, Elem);
+		Infix2Postfix(expression, Elem, opMap);
 		expression = "";
 		processPostfix(Elem);
 	}
 	return 0;
 }
 
-void Infix2Postfix(string& expression, queue<element>& Elem){
+void Infix2Postfix(string& expression, list<element>& Elem, map<int,string>& opMap){
 	int i=0;
 	int op;
 	bool leftIsNumber = false;
 	element container;
-	stack<int> S;
+	list<int> S;
+
+	cout << "*************** PROCESS START ***************" << endl;
+	cout << "Infix expression: " << expression << endl << endl;
 	
 	while(i < expression.length()){
-		
+
 		// ignore white-space
 		if (expression[i] == ' '){
 			i++;
@@ -77,49 +103,73 @@ void Infix2Postfix(string& expression, queue<element>& Elem){
 		}
 
 		else if (isdigit(expression[i])){
+			printOperatorStack(S,opMap);
+			printPostfixList(Elem,opMap);
 			container.isnumber = true;
 			container.content = readInt(expression,i);
-			Elem.push(container);
+			Elem.push_back(container);
 			leftIsNumber = true;
+			cout << "\tpush Integer: " << container.content << endl;
 		}
 
 		else if (expression[i] == '('){
-			S.push(LEFT_PARENTHESIS);
+			printOperatorStack(S,opMap);
+			printPostfixList(Elem,opMap);
+			S.push_back(LEFT_PARENTHESIS);
 			leftIsNumber = false;
 			i++;
+			cout << "\tpush left parenthesis into operator stack" << endl;
 		}
 
 		else if (expression[i] == ')'){
-			while(!S.empty() && S.top()!=LEFT_PARENTHESIS){
+			printOperatorStack(S,opMap);
+			printPostfixList(Elem,opMap);
+			cout << "\treach right parenthesis" << endl;
+			cout << "\tprocess operator in the operator stack......" << endl;
+			while(!S.empty() && S.back()!=LEFT_PARENTHESIS){
 				container.isnumber = false;
-				container.content = S.top();
-				Elem.push(container);
-				S.pop();
+				container.content = S.back();
+				Elem.push_back(container);
+				S.pop_back();
+				cout << "\tpop out [" << opMap[container.content] << "] from operator stack into postfix list" << endl;
 			}
-			S.pop();
+			S.pop_back();
 			leftIsNumber = true;
 			i++;
 		}
 
 		else{
+			printOperatorStack(S,opMap);
+			printPostfixList(Elem,opMap);
 			op = readOp(expression,i,leftIsNumber);
-			while(!S.empty() && S.top()!=LEFT_PARENTHESIS && hasHigherPrecendence(S.top(), op)){
+			while(!S.empty() && S.back()!=LEFT_PARENTHESIS && hasHigherPrecendence(S.back(), op)){
 				container.isnumber = false;
-				container.content = S.top();
-				Elem.push(container);
-				S.pop();
+				container.content = S.back();
+				Elem.push_back(container);
+				S.pop_back();
+				cout << "\tpop out [" << opMap[container.content] << "] from operator stack into postfix list" << endl;
 			}
-			S.push(op);
+			S.push_back(op);
 			leftIsNumber = false;
+			cout << "\tpush [" << opMap[op] << "] into operator stack" << endl;
 		}
+		// seperate with the next step
+		cout << endl;
 	}
 
 	while(!S.empty()){
+		printOperatorStack(S,opMap);
+		printPostfixList(Elem,opMap);
 		container.isnumber = false;
-		container.content = S.top();
-		Elem.push(container);
-		S.pop();
+		container.content = S.back();
+		Elem.push_back(container);
+		S.pop_back();
+		cout << "\tpop out [" << opMap[container.content] << "] from operator stack into postfix list" << endl;
+		cout << endl;
 	}
+	cout << "Finally," << endl;
+	printPostfixList(Elem,opMap);
+	cout << "**************** PROCESS END ****************" << endl;
 }
 
 int readInt(string& line, int& iter){
@@ -209,7 +259,26 @@ bool hasHigherPrecendence(int& a, int& b){
 		return false;
 }
 
-void processPostfix(queue<element>& Q){
+void printOperatorStack(list<int>& S,map<int,string>& opMap){
+	cout << "Operator Stack: ";
+	for(list<int>::iterator it = S.begin(); it!=S.end(); ++it){
+		cout << "[" << opMap[(*it)] << "] ";
+	}
+	cout << endl;
+}
+
+void printPostfixList(list<element>& Elem,map<int,string>& opMap){
+	cout << "Postfix List: ";
+	for(list<element>::iterator it = Elem.begin(); it!=Elem.end(); ++it){
+		if((*it).isnumber)
+			cout << "[" << (*it).content << "]" << " ";
+		else
+			cout << "[" << opMap[(*it).content] << "]" << " ";
+	}
+	cout << endl;
+}
+
+void processPostfix(list<element>& Q){
 	stack<int> N;
 	int a, b;
 	cout << "Postfix Exp: ";
@@ -358,8 +427,8 @@ void processPostfix(queue<element>& Q){
 					break;
 			}
 		}
-		Q.pop();
+		Q.pop_front();
 	}
 	cout << endl;
-	cout << "RESULT: " << N.top() << endl;
+	cout << "RESULT: " << N.top() << endl << endl;
 }
