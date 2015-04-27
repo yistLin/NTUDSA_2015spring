@@ -1,7 +1,8 @@
 #include <iostream>
 #include <cstdio>
 #include <stack>
-#include <queue>
+#include <list>
+#include <map>
 #include <string>
 #include <cmath>
 
@@ -14,7 +15,7 @@ struct element
 	int op;
 };
 
-void Infix2Postfix(string& expression, queue<element>& Elem);
+void Infix2Postfix(string& expression, list<element>& Elem,map<int,string>&);
 
 double readDouble(string&,int&);
 
@@ -24,7 +25,11 @@ int readOp(string&,int&,bool);
 
 bool hasHigherPrecendence(int&,int&);
 
-void processPostfix(queue<element>&);
+void printOperatorStack(list<int>&,map<int,string>&);
+
+void printPostfixList(list<element>&,map<int,string>&);
+
+void processPostfix(list<element>&);
 
 // operator precedence
 enum {
@@ -51,22 +56,41 @@ enum {
 int main(int argc, char const *argv[])
 {
 	string expression;
-	queue<element> Elem;
+	list<element> Elem;
+	map<int,string> opMap;
+	opMap[5] = "(";
+	opMap[15] = ")";
+	opMap[4] = "sin";
+	opMap[14] = "cos";
+	opMap[24] = "exp";
+	opMap[34] = "log";
+	opMap[44] = "pow";
+	opMap[54] = "sqrt";
+	opMap[64] = "fabs";
+	opMap[3] = "p";
+	opMap[13] = "m";
+	opMap[2] = "*";
+	opMap[1] = "+";
+	opMap[11] = "-";
+	opMap[0] = ",";
 
 	while(getline(cin, expression)){
-		Infix2Postfix(expression, Elem);
+		Infix2Postfix(expression, Elem, opMap);
 		expression = "";
 		processPostfix(Elem);
 	}
 	return 0;
 }
 
-void Infix2Postfix(string& expression, queue<element>& Elem){
+void Infix2Postfix(string& expression, list<element>& Elem, map<int,string>& opMap){
 	int i=0;
 	int op;
 	bool leftIsNumber = false;
 	element container;
-	stack<int> S;
+	list<int> S;
+
+	cout << "*************** PROCESS START ***************" << endl;
+	cout << "Infix expression: " << expression << endl << endl;
 	
 	while(i < expression.length()){
 		
@@ -77,61 +101,87 @@ void Infix2Postfix(string& expression, queue<element>& Elem){
 		}
 
 		else if (isdigit(expression[i]) || expression[i]=='.'){
+			printOperatorStack(S,opMap);
+			printPostfixList(Elem,opMap);
 			container.isnumber = true;
 			container.number = readDouble(expression,i);
-			Elem.push(container);
+			Elem.push_back(container);
 			leftIsNumber = true;
+			cout << "\tpush Double: " << container.number << endl;
 		}
 
 		else if (expression[i] == '('){
-			S.push(LEFT_PARENTHESIS);
+			printOperatorStack(S,opMap);
+			printPostfixList(Elem,opMap);
+			S.push_back(LEFT_PARENTHESIS);
 			leftIsNumber = false;
 			i++;
+			cout << "\tpush left parenthesis into operator stack" << endl;
 		}
 
 		else if (expression[i] == ')'){
-			while(!S.empty() && S.top()!=LEFT_PARENTHESIS){
+			printOperatorStack(S,opMap);
+			printPostfixList(Elem,opMap);
+			cout << "\treach right parenthesis" << endl;
+			cout << "\tprocess operator in the operator stack......" << endl;
+			while(!S.empty() && S.back()!=LEFT_PARENTHESIS){
 				container.isnumber = false;
-				container.op = S.top();
-				Elem.push(container);
-				S.pop();
+				container.op = S.back();
+				Elem.push_back(container);
+				S.pop_back();
+				cout << "\tpop out [" << opMap[container.op] << "] from operator stack into postfix list" << endl;
 			}
-			S.pop();
+			S.pop_back();
 			leftIsNumber = true;
 			i++;
 		}
 
 		else if (isalpha(expression[i])){
+			printOperatorStack(S,opMap);
+			printPostfixList(Elem,opMap);
 			op = readFunc(expression,i);
-			while(!S.empty() && S.top()!=LEFT_PARENTHESIS && hasHigherPrecendence(S.top(), op)){
+			while(!S.empty() && S.back()!=LEFT_PARENTHESIS && hasHigherPrecendence(S.back(), op)){
 				container.isnumber = false;
-				container.op = S.top();
-				Elem.push(container);
-				S.pop();
+				container.op = S.back();
+				Elem.push_back(container);
+				S.pop_back();
+				cout << "\tpop out [" << opMap[container.op] << "] from operator stack into postfix list" << endl;
 			}
-			S.push(op);
+			S.push_back(op);
 			leftIsNumber = false;
+			cout << "\tpush [" << opMap[op] << "] into operator stack" << endl;
 		}
 
 		else{
+			printOperatorStack(S,opMap);
+			printPostfixList(Elem,opMap);
 			op = readOp(expression,i,leftIsNumber);
-			while(!S.empty() && S.top()!=LEFT_PARENTHESIS && hasHigherPrecendence(S.top(), op)){
+			while(!S.empty() && S.back()!=LEFT_PARENTHESIS && hasHigherPrecendence(S.back(), op)){
 				container.isnumber = false;
-				container.op = S.top();
-				Elem.push(container);
-				S.pop();
+				container.op = S.back();
+				Elem.push_back(container);
+				S.pop_back();
+				cout << "\tpop out [" << opMap[container.op] << "] from operator stack into postfix list" << endl;
 			}
-			S.push(op);
+			S.push_back(op);
 			leftIsNumber = false;
+			cout << "\tpush [" << opMap[op] << "] into operator stack" << endl;
 		}
+		cout << endl;
 	}
 
 	while(!S.empty()){
+		printOperatorStack(S,opMap);
+		printPostfixList(Elem,opMap);
 		container.isnumber = false;
-		container.op = S.top();
-		Elem.push(container);
-		S.pop();
+		container.op = S.back();
+		Elem.push_back(container);
+		S.pop_back();
+		cout << "\tpop out [" << opMap[container.op] << "] from operator stack into postfix list" << endl;
 	}
+	cout << "Finally," << endl;
+	printPostfixList(Elem,opMap);
+	cout << "**************** PROCESS END ****************" << endl;
 }
 
 double readDouble(string& line,int& i){
@@ -231,7 +281,26 @@ bool hasHigherPrecendence(int& a, int& b){
 		return false;
 }
 
-void processPostfix(queue<element>& Q){
+void printOperatorStack(list<int>& S,map<int,string>& opMap){
+	cout << "Operator Stack: ";
+	for(list<int>::iterator it = S.begin(); it!=S.end(); ++it){
+		cout << "[" << opMap[(*it)] << "] ";
+	}
+	cout << endl;
+}
+
+void printPostfixList(list<element>& Elem,map<int,string>& opMap){
+	cout << "Postfix List: ";
+	for(list<element>::iterator it = Elem.begin(); it!=Elem.end(); ++it){
+		if((*it).isnumber)
+			cout << "[" << (*it).number << "]" << " ";
+		else
+			cout << "[" << opMap[(*it).op] << "]" << " ";
+	}
+	cout << endl;
+}
+
+void processPostfix(list<element>& Q){
 	stack<double> N;
 	double a, b;
 	printf("Postfix Exp: ");
@@ -338,8 +407,9 @@ void processPostfix(queue<element>& Q){
 					break;
 			}
 		}
-		Q.pop();
+		Q.pop_front();
 	}
 	printf("\n");
 	printf("RESULT: %.6f\n", N.top());
+	cout << endl;
 }
