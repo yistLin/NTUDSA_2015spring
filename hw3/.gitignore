@@ -1,4 +1,5 @@
 # ignore compiled binary file
 *.out
-output
+*output
+output*
 test*
