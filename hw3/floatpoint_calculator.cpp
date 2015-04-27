@@ -76,7 +76,7 @@ int main(int argc, char const *argv[])
 
 	while(getline(cin, expression)){
 		Infix2Postfix(expression, Elem, opMap);
-		expression = "";
+		expression.clear();
 		processPostfix(Elem);
 	}
 	return 0;
