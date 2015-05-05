@@ -1,0 +1,7 @@
+# ignore test data
+*test
+test*
+*in
+in*
+*out
+out*
