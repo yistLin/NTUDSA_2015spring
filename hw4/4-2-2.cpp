@@ -5,13 +5,13 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 
 #define MAX_FEATURE (1024+1)
 #define MAX_EXAMPLE (10000)
-
-int buildTree_cnt;
+#define ERROR 0.000001
 
 struct DL
 {
@@ -48,17 +48,12 @@ int main(int argc, char const *argv[]) {
 	processFile(argv[1], labels, dataset, totalExample, allID);
 
 	computeAllThreshold(labels, dataset, threshold, totalExample, allID);
-	/*
-	for(set<int>::iterator i=allID.begin(); i!=allID.end(); ++i)
-		printf("threshold = %.6f\n", threshold[*i]);
-	printf("\n\n");
-	*/
+
 	int *datasetMask = new int[totalExample];
 	for(int i=0; i<totalExample; i++)
 		datasetMask[i] = 1;
 
 	/* start to build tree... */
-	buildTree_cnt = 0;
 	TreeNode *decisionTree = buildTree(threshold, epsilon, labels, dataset, datasetMask, totalExample, allID);
 
 	printf("int tree_predict(double *attr){\n");
@@ -87,6 +82,7 @@ void processFile(char const* filename, int* labels, vector<double*>& dataset, in
 		dataset.push_back(data);
 		totalExample++;
 	}
+	fin.close();
 }
 
 void processInputString(string istr, int& label, double* data, set<int>& allID){
@@ -112,7 +108,7 @@ void processInputString(string istr, int& label, double* data, set<int>& allID){
 }
 
 double confusion(double m, double n){
-	if((m+n) == 0)
+	if(fabs(m) < ERROR || fabs(n) < ERROR)
 		return 0.0;
 	else
 		return 1.0 - ((m/(m+n)) * (m/(m+n))) - ((n/(m+n)) * (n/(m+n)));
@@ -152,8 +148,10 @@ double computeThreshold(int* labels, double* data, int totalExample){
 	/* sort according to the value of data */
 	sort(dl, dl + totalExample, comp);
 
+	double preData = dl[0].data-1;
+
 	tmp = totalConfusion(preY,preN,totalY,totalN);
-	if(tmp <= smallestConfusion){
+	if(tmp < smallestConfusion && fabs(tmp - smallestConfusion) > ERROR){
 		smallestConfusion = tmp;
 		pivot = 0;
 	}
@@ -164,10 +162,11 @@ double computeThreshold(int* labels, double* data, int totalExample){
 			preN++;
 
 		tmp = totalConfusion(preY, preN, totalY-preY, totalN-preN);
-		if(tmp <= smallestConfusion){
+		if(tmp < smallestConfusion && dl[i].data != preData){
 			smallestConfusion = tmp;
 			pivot = i+1;
 		}
+		preData = dl[i].data;
 	}
 
 	double threshold;
@@ -177,28 +176,21 @@ double computeThreshold(int* labels, double* data, int totalExample){
 	else if(pivot == totalExample)
 		threshold = dl[totalExample].data + 1;
 	else
-		threshold = (dl[pivot].data + dl[pivot+1].data) / 2;
+		threshold = (dl[pivot-1].data + dl[pivot].data) / 2;
 
 	delete [] dl;
 	return threshold;
 }
 
 bool comp(DL a, DL b){
-	return a.data < b.data;
+	if(a.data < b.data)
+		return true;
+	else
+		return false;
 }
 
 TreeNode* buildTree(double* threshold, double epsilon, int* labels, vector<double*>& dataset, int* datasetMask, int totalExample, set<int> currentID){
 	/* compute confusion in the examples first... */
-	/*
-	printf("run buildTree...\n");
-	buildTree_cnt++;
-	if(buildTree_cnt > 20){
-		TreeNode *root = new TreeNode;
-		root->isLeaf = true;
-		root->decision = 10000;
-		return root;
-	}
-	*/
 	double smallestConfusion = 1.0, tmpConfusion;
 	int pivot = 0;
 	int preY, preN, postY, postN;
@@ -226,9 +218,7 @@ TreeNode* buildTree(double* threshold, double epsilon, int* labels, vector<doubl
 		}
 
 		tmpConfusion = totalConfusion(double(preY), double(preN), double(postY), double(postN));
-		//printf("tmpConfusion = %.6f\n", tmpConfusion);
-		//printf("preY=%d, preN=%d, postY=%d, postN=%d\n", preY,preN,postY,postN);
-		if(tmpConfusion <= smallestConfusion){
+		if(tmpConfusion < smallestConfusion){
 			smallestConfusion = tmpConfusion;
 			pivot = *id;
 			pivot_preN = preN;
@@ -239,13 +229,17 @@ TreeNode* buildTree(double* threshold, double epsilon, int* labels, vector<doubl
 	}
 	/* Now, we have the smallestConfusion and its pivot in the current dataset */
 
-	//printf("smallestConfusion = %.6f, pivot = %d, preY = %d, preN = %d, postY = %d, postN = %d\n", smallestConfusion, pivot, pivot_preY, pivot_preN, pivot_postY, pivot_postN);	
-
 	TreeNode *root = new TreeNode;
-	
 	/* confusion smaller than epsilon or cannot branch anymore */
-	if( (pivot_preY + pivot_preN) == 0 ){
-		//printf("preY+preN = 0\n");
+	if( (pivot_preN + pivot_postN) == 0 ){
+		root->isLeaf = true;
+		root->decision = 1;
+	}
+	else if( (pivot_preY + pivot_postY) == 0 ){
+		root->isLeaf = true;
+		root->decision = -1;
+	}
+	else if( (pivot_preY + pivot_preN) == 0 ){
 		root->isLeaf = true;
 		if(pivot_postY > pivot_postN)
 			root->decision = 1;
@@ -253,15 +247,29 @@ TreeNode* buildTree(double* threshold, double epsilon, int* labels, vector<doubl
 			root->decision = -1;
 	}
 	else if( (pivot_postY + pivot_postN) == 0 ){
-		//printf("postY+postN = 0\n");
 		root->isLeaf = true;
 		if(pivot_preY > pivot_preN)
 			root->decision = 1;
 		else
 			root->decision = -1;
 	}
-	else if(smallestConfusion <= epsilon || currentID.size() <= 1){
-		//printf("smallestConfusion <= epsilon or currentID.size() <= 1\n");
+	else if( (preY == 0 && postN == 0) || (preN == 0 && postY == 0) ){
+		root->isLeaf = false;
+		root->id = pivot;
+		root->left = new TreeNode;
+		root->right = new TreeNode;
+		root->left->isLeaf = true;
+		root->right->isLeaf = true;
+		if( preY == 0 && postN == 0){
+			root->right->decision = 1;
+			root->left->decision = -1;
+		}
+		else{
+			root->right->decision = -1;
+			root->left->decision = 1;
+		}
+	}
+	else if(smallestConfusion < epsilon || fabs(smallestConfusion - epsilon) < ERROR){
 		root->isLeaf = true;
 		if((pivot_preY + pivot_postY) > (pivot_preN + pivot_postN))
 			root->decision = 1;
@@ -271,9 +279,7 @@ TreeNode* buildTree(double* threshold, double epsilon, int* labels, vector<doubl
 	else{
 		/* dataset can be branched to two new tree */
 		root->isLeaf = false;
-		//printf("treenode isn't leaf, branching...\n");
 		root->id = pivot;
-		//currentID.erase(pivot);
 
 		/* record the mask first */
 		int *tmp_datasetMask = new int[totalExample];
@@ -283,11 +289,10 @@ TreeNode* buildTree(double* threshold, double epsilon, int* labels, vector<doubl
 		for(int i=0; i<totalExample; ++i){
 			if(tmp_datasetMask[i] == 1){
 				/* if data smaller than threshold */
-				if(dataset[i][pivot] <= threshold[pivot])
+				if(dataset[i][pivot] > threshold[pivot])
 					datasetMask[i] = 0;
 			}
 		}
-
 		root->left = buildTree(threshold, epsilon, labels, dataset, datasetMask, totalExample, currentID);
 
 		for(int i=0; i<totalExample; ++i)
@@ -296,11 +301,10 @@ TreeNode* buildTree(double* threshold, double epsilon, int* labels, vector<doubl
 		for(int i=0; i<totalExample; ++i){
 			if(tmp_datasetMask[i] == 1){
 				/* if data smaller than threshold */
-				if(dataset[i][pivot] > threshold[pivot])
+				if(dataset[i][pivot] <= threshold[pivot])
 					datasetMask[i] = 0;
 			}
 		}
-
 		root->right = buildTree(threshold, epsilon, labels, dataset, datasetMask, totalExample, currentID);
 	}
 
@@ -316,7 +320,7 @@ void printTree(TreeNode* root, int depth, double* threshold){
 	else{
 		for(int i=0; i<=depth; i++)
 			printf("\t");
-		printf("if(attr[%d] > %.6f){\n", root->id, threshold[root->id]);
+		printf("if(attr[%d] <= %f){\n", root->id, threshold[root->id]);
 		
 		printTree(root->left, depth+1, threshold);
 		
