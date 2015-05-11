@@ -104,7 +104,7 @@ void processFile(char const* filename, int* labels, vector<double*>& dataset, in
 
 double confusion(double m, double n){
 	if(m == 0 && n == 0)
-		return 2.0;
+		return 1.0;
 	else
 		return 1.0 - ((m/(m+n)) * (m/(m+n))) - ((n/(m+n)) * (n/(m+n)));
 }
@@ -201,7 +201,7 @@ TreeNode* buildTree(double epsilon, int* labels, vector<double*>& dataset, int* 
 
 		DL tmp;
 		double* confusions = new double[MAX_FEATURE];
-
+		pivot = *(currentID.begin());
 		for(set<int>::iterator id=currentID.begin(); id!=currentID.end(); ++id){
 			/* loop for all dataset */
 			for(int j=0; j<totalExample; ++j){
