@@ -30,10 +30,8 @@ struct TreeNode
 };
 
 void processFile(char const* filename, int*, vector<double*>&, int&, set<int>&);
-void processInputString(string, int&, double*, set<int>&);
 double confusion(double, double);
 double totalConfusion(double, double, double, double);
-void computeAllThreshold(int*, vector<double*>&, int*, double*, int, set<int>&);
 double computeThreshold(vector<DL>&, double&);
 bool comp(DL, DL);
 TreeNode* buildTree(double,int*,vector<double*>&, int*, int, set<int>);
@@ -70,42 +68,38 @@ int main(int argc, char const *argv[]) {
 }
 
 void processFile(char const* filename, int* labels, vector<double*>& dataset, int& totalExample, set<int>& allID){
-	int label, cnt = 0;
+	int label, cnt = 0, id;
+	char *tmp;
 	ifstream fin;
 	string istr;
 	fin.open(filename);
 
 	while (getline(fin, istr)){
 		double* data = new double[MAX_FEATURE];
-		processInputString(istr, label, data, allID);
+		char *cstr = new char[istr.size() + 1];
+		strncpy(cstr, istr.c_str(), istr.size()+1);
+
+		/* token label from string */
+		tmp =  strtok(cstr, ": ");
+		label = atoi(tmp);
+		tmp = strtok(NULL, ": ");
+
+		while(tmp != NULL) {
+			/* token data of every feature from string */
+			id = atoi(tmp);
+			tmp = strtok(NULL, ": ");
+			data[id] = atof(tmp);
+			tmp = strtok(NULL, ": ");
+			allID.insert(id);
+		}
+		delete[] cstr;
+
 		/* label and data refreshed */
 		labels[cnt++] = label;
 		dataset.push_back(data);
-		totalExample++;
 	}
+	totalExample = cnt;
 	fin.close();
-}
-
-void processInputString(string istr, int& label, double* data, set<int>& allID){
-	int id;
-	char *cstr = new char[istr.size() + 1];
-	strncpy(cstr, istr.c_str(), istr.size()+1);
-
-	/* token label from string */
-	char *tmp =  strtok(cstr, ": ");
-	label = atoi(tmp);
-	tmp = strtok(NULL, ": ");
-
-	while(tmp != NULL) {
-		/* token data of every feature from string */
-		id = atoi(tmp);
-		tmp = strtok(NULL, ": ");
-		data[id] = atof(tmp);
-		tmp = strtok(NULL, ": ");
-		allID.insert(id);
-	}
-
-	delete[] cstr;
 }
 
 double confusion(double m, double n){
@@ -149,10 +143,12 @@ double computeThreshold(vector<DL>& dl, double& confusion){
 		else
 			preN++;
 
-		tmp = totalConfusion(preY, preN, totalY-preY, totalN-preN);
-		if(tmp < smallestConfusion && dl[i].data != dl[i+1].data){
-			smallestConfusion = tmp;
-			pivot = i;
+		if(dl[i].data != dl[i+1].data){
+			tmp = totalConfusion(preY, preN, totalY-preY, totalN-preN);
+			if(tmp < smallestConfusion){
+				smallestConfusion = tmp;
+				pivot = i;
+			}
 		}
 	}
 	confusion = smallestConfusion;
