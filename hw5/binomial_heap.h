@@ -1,5 +1,6 @@
 #include <utility>
 #include <list>
+#include <iostream>
 
 struct EmptyHeap: public std::exception {};
 
@@ -44,7 +45,7 @@ class BinomialHeap {
 		 */
 		CarrySum merge_tree(BT *a, BT *b, BT *c) {
 			// write your code here.
-			int cond = ((a->size()==0)?0:1) + ((b->size()==0)?0:1) + ((b->size()==0)?0:1);
+			int cond = ((a->size()==0)?0:1) + ((b->size()==0)?0:1) + ((c->size()==0)?0:1);
 			if (cond == 0) {
 				return std::pair<BT*,BT*>(nullptr,nullptr);
 			}
@@ -56,7 +57,7 @@ class BinomialHeap {
 				if (b->size() == 0) b = a;
 				else if (c->size() == 0) c = a;
 
-				if (b->element > c->element) {
+				if ((b->element) > (c->element)) {
 					b->children.push_back(c);
 					b->_size *= 2;
 					return std::pair<BT*,BT*>(b,nullptr);
@@ -92,10 +93,11 @@ class BinomialHeap {
 		MaxRemainder pop_max(BT *a) {
 			// write your code here.
 			BH r;
+			r.size = a->size() - 1;
 			T e = a->element;
 			int sub_t = 0;
 			while (!(a->children.empty())) {
-				r.tree[sub_t++] = a->children.front();
+				r.trees[sub_t++] = a->children.front();
 				a->children.pop_front();
 			}
 			return std::pair<T,BH>(e,r);
@@ -119,20 +121,28 @@ class BinomialHeap {
 		 */
 		void merge(BH &b) {
 			// write your code here.
-			CarrySum *cs;
+			CarrySum cs;
 			BT* carryIn = nullptr;
-			for (int i=0; i<32; i++) {
-				cs = merge_tree(tree[i], b.tree[i], carryIn);
+			for (int i=0; i<32; ++i) {
+				cs = merge_tree(trees[i], b.trees[i], carryIn);
 				carryIn = cs.first;
-				tree[i] = cs.second;
+				trees[i] = cs.second;
 			}
+			for (int i=0; i<32; ++i)
+				b.trees[i] = nullptr;
+			size += b.size;
+			b.size = 0;
 		}
 
 		void insert(const T &element) {
 			BH tmp = BH(element);
 			merge(tmp);
 		}
-		
+
+		int getSize(){
+			return size;
+		}
+
 		T pop() {
 			if(size==0) throw EmptyHeap();
 			else {
