@@ -48,33 +48,27 @@ class BinomialHeap {
 			int cond = ((a->size()==0)?0:1) + ((b->size()==0)?0:1) + ((c->size()==0)?0:1);
 			if (cond == 0) {
 				return std::pair<BT*,BT*>(nullptr,nullptr);
-			}
-			else if (cond == 1) {
+			}else if (cond == 1) {
 				BT* sum = (c->size()==0) ? ((a->size()==0)?b:a) : c;
 				return std::pair<BT*,BT*>(nullptr,sum);
-			}
-			else if (cond == 2) {
+			}else if (cond == 2) {
 				if (b->size() == 0) b = a;
 				else if (c->size() == 0) c = a;
-
 				if ((b->element) > (c->element)) {
 					b->children.push_back(c);
 					b->_size *= 2;
 					return std::pair<BT*,BT*>(b,nullptr);
-				}
-				else {
+				}else {
 					c->children.push_back(b);
 					c->_size *= 2;
 					return std::pair<BT*,BT*>(c,nullptr);
 				}
-			}
-			else {
+			}else {
 				if (b->element > c->element) {
 					b->children.push_back(c);
 					b->_size *= 2;
 					return std::pair<BT*,BT*>(b,a);
-				}
-				else {
+				}else {
 					c->children.push_back(b);
 					c->_size *= 2;
 					return std::pair<BT*,BT*>(c,a);
