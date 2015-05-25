@@ -1,13 +1,10 @@
 #include <iostream>
 #include <string>
-#include <ctime>
 #include "computer.h"
 using namespace std;
 
 int main(int argc, char const *argv[])
 {
-	clock_t t1, t2;
-	t1 = clock();
 	int c, w;
 	int cm1, cm2;
 	int max_priority;
@@ -52,7 +49,5 @@ int main(int argc, char const *argv[])
 	}
 
 	delete [] computers;
-	t2 = clock();
-	cout << "pass time: " << (t2-t1)/(double)CLOCKS_PER_SEC << endl;
 	return 0;
 }
