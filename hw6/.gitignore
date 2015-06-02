@@ -1,3 +1,5 @@
 # ignore all binary file
 *.o
 *.out
+hw6_2
+hw6_3
