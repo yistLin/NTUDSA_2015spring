@@ -3,3 +3,13 @@
 *.out
 hw6_2
 hw6_3
+
+# we don't need to submit the header file and Makefile
+Makefile
+avl_ntudsa.*
+avl.*
+bst.*
+rb.*
+
+# ignore test text file
+*.txt
