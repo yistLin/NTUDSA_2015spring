@@ -52,8 +52,10 @@ int main(int argc, char const *argv[])
   int n, m;
   int cmd, game_i, game_j, owner_i, owner_j;
   long long int p, s;
+  
+  scanf("%d%d", &n, &m);
 
-  game_set.resize(n+1);
+  game_set.resize(n + 1);
   track_owner.resize(n + 1);
   real_owner.resize(n + 1);
 
