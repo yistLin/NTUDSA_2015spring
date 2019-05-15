@@ -60,7 +60,7 @@ int str_compare(const void *pa, const void *pb, void *param) {
 }
 
 int main(){
-  char istr[TOTAL_STR][MAX_LENGTH];
+  char istr[TOTAL_STR][MAX_LENGTH+1];
   int i;
   int len;
   for (i=0; i<TOTAL_STR; ++i){
@@ -80,15 +80,15 @@ int main(){
   tree3 = rb_create(str_compare, NULL, NULL);
 
   for (i=0; i<TOTAL_STR; ++i) {
-    char* element = (char*)malloc(sizeof(char)*MAX_LENGTH);
+    char* element = (char*)malloc(sizeof(char)*(MAX_LENGTH+1));
     strcpy(element, istr[i]);
     void **p = avl_probe(tree1, element);
 
-    element = (char*)malloc(sizeof(char)*MAX_LENGTH);
+    element = (char*)malloc(sizeof(char)*(MAX_LENGTH+1));
     strcpy(element, istr[i]);
     p = bst_probe(tree2, element);
 
-    element = (char*)malloc(sizeof(char)*MAX_LENGTH);
+    element = (char*)malloc(sizeof(char)*(MAX_LENGTH+1));
     strcpy(element, istr[i]);
     p = rb_probe(tree3, element);
   }
